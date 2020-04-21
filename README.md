@@ -18,7 +18,7 @@ otomatik.HTTPS([]string{"example.com"}, mux)
 
 That line of code will serve your HTTP router `mux` over HTTPS, complete with HTTP->HTTPS redirects. It obtains and renews the TLS certificates. It staples OCSP responses for greater privacy and security. As long as your domain name points to your server, Otomatik will keep its connections secure.
 
-Reusable TLS certificate issuance &amp; renewal.
+
 
 ## Features
 
@@ -302,7 +302,7 @@ This challenge works by setting a special record in the domain's zone. To do thi
 To enable it, just set the `DNSProvider` field on a `otomatik.Config` struct, or set the default `otomatik.DNSProvider` variable. For example, if my domains' DNS was served by DNSimple and I set my DNSimple API credentials in environment variables:
 
 ```go
-import "github.com/go-acme/lego/v3/providers/dns/dnsimple"
+import "github.com/go-acmeclient/lego/v3/providers/dns/dnsimple"
 
 provider, err := dnsimple.NewDNSProvider()
 if err != nil {
@@ -377,4 +377,4 @@ Again, if you're needing to do this, you've probably over-complicated your appli
 
 ## Credits and License
 
-Otomatik was originally a folk of [CertMagic](https://github.com/caddyserver/otomatik), a project by [Matthew Holt](https://twitter.com/mholt6), who is the author; and other various contributors, and customised for internal use at [Chamaconekt Kenya](https://github.com/chamaconekt). Otomatik is licensed under Apache 2.0, an open source license.
+Otomatik is originally a folk of [CertMagic](https://github.com/caddyserver/otomatik), a project by [Matthew Holt](https://twitter.com/mholt6), who is the author; and other contributors, and now customised and maintained separately for internal use at [Chamaconekt Kenya](https://github.com/chamaconekt). Otomatik is licensed under [Apache 2.0](https://github.com/wondenge/otomatik/blob/master/LICENSE), an open source license.
