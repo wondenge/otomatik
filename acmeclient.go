@@ -136,8 +136,7 @@ func (manager *ACMEManager) newACMEClient(useTestCA, interactive bool) (*acmeCli
 		acmeClients[clientKey] = client
 	}
 
-	// if not registered, the user must register an account
-	// with the CA and agree to terms
+	// if not registered, the user must register an account with the CA and agree to terms
 	if leUser.Registration == nil {
 		if interactive { // can't prompt a user who isn't there
 			termsURL := client.GetToSURL()
@@ -182,8 +181,7 @@ func (manager *ACMEManager) newACMEClient(useTestCA, interactive bool) (*acmeCli
 	return c, nil
 }
 
-// initialChallenges returns the initial set of challenges
-// to try using c.config as a basis.
+// initialChallenges returns the initial set of challenges to try using c.config as a basis.
 func (client *acmeClient) initialChallenges() []challenge.Type {
 	// if configured, use DNS challenge exclusively
 	if client.mgr.DNSProvider != nil {
@@ -203,20 +201,14 @@ func (client *acmeClient) initialChallenges() []challenge.Type {
 
 // nextChallenge chooses a challenge randomly from the given list of available challenges
 // and configures client.acmeClient to use that challenge according to client.config.
-// It pops the chosen challenge from the list and returns that challenge along with the
-// new list without that challenge.
+// It pops the chosen challenge from the list and returns that challenge along with the new list without that challenge.
 // If len(available) == 0, this is a no-op.
-//
-// Don't even get me started on how dumb it is we need to do this here instead of the
-// upstream lego library doing it for us.
-//
-// Lego used to randomize the challenge order, thus allowing another one to be used if the
-// first one failed. https://github.com/go-acme/lego/issues/842
+// Don't even get me started on how dumb it is we need to do this here instead of the upstream lego library doing it for us.
+// Lego used to randomize the challenge order, thus allowing another one to be used if the first one failed.
+// https://github.com/go-acme/lego/issues/842
 // (It also has an awkward API for adjusting the available challenges.)
-// At time of writing, lego doesn't try anything other than the TLS-ALPN challenge,
-// even if the HTTP challenge is also enabled.
-// So we take matters into our own hands and enable only one challenge at a time in
-// the underlying client, randomly selected by us.
+// At time of writing, lego doesn't try anything other than the TLS-ALPN challenge, even if the HTTP challenge is also enabled.
+// So we take matters into our own hands and enable only one challenge at a time in the underlying client, randomly selected by us.
 func (client *acmeClient) nextChallenge(available []challenge.Type) (challenge.Type, []challenge.Type) {
 	if len(available) == 0 {
 		return "", available

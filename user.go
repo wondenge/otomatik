@@ -55,10 +55,10 @@ func (*ACMEManager) newUser(email string) (*user, error) {
 	return user, nil
 }
 
-// getEmail does everything it can to obtain an email address from the user within
-// the scope of memory and storage to use for ACME TLS.
-// If it cannot get an email address, it does nothing (If user is prompted, it will
-// warn the user of the consequences of an empty email.)
+// getEmail does everything it can to obtain an email address from the user
+// within the scope of memory and storage to use for ACME TLS.
+// If it cannot get an email address, it does nothing (If user is prompted,
+// it will warn the user of the consequences of an empty email.)
 // This function MAY prompt the user for input.
 // If allowPrompts is false, the user will NOT be prompted and an empty email may be returned.
 func (manager *ACMEManager) getEmail(allowPrompts bool) error {
@@ -116,11 +116,10 @@ func (manager *ACMEManager) getAgreementURL() (string, error) {
 	return dir.Meta.TermsOfService, nil
 }
 
-// promptUserForEmail prompts the user for an email address
-// and returns the email address they entered (which could
-// be the empty string). If no error is returned, then Agreed
-// will also be set to true, since continuing through the
-// prompt signifies agreement.
+// promptUserForEmail prompts the user for an email address and returns the email
+// address they entered (which could be the empty string).
+// If no error is returned, then Agreed will also be set to true,
+// since continuing through the prompt signifies agreement.
 func (manager *ACMEManager) promptUserForEmail() (string, error) {
 	agreementURL, err := manager.getAgreementURL()
 	if err != nil {
@@ -141,11 +140,10 @@ func (manager *ACMEManager) promptUserForEmail() (string, error) {
 	return leEmail, nil
 }
 
-// getUser loads the user with the given email from disk
-// using the provided storage. If the user does not exist,
-// it will create a new one, but it does NOT save new
-// users to the disk or register them via ACME. It does
-// NOT prompt the user.
+// getUser loads the user with the given email from disk using the provided storage.
+// If the user does not exist, it will create a new one,
+// but it does NOT save new users to the disk or register them via ACME.
+// It does NOT prompt the user.
 func (manager *ACMEManager) getUser(ca, email string) (*user, error) {
 	regBytes, err := manager.config.Storage.Load(manager.storageKeyUserReg(ca, email))
 	if err != nil {
@@ -173,11 +171,10 @@ func (manager *ACMEManager) getUser(ca, email string) (*user, error) {
 	return u, err
 }
 
-// saveUser persists a user's key and account registration
-// to the file system. It does NOT register the user via ACME
-// or prompt the user. You must also pass in the storage
-// wherein the user should be saved. It should be the storage
-// for the CA with which user has an account.
+// saveUser persists a user's key and account registration to the file system.
+// It does NOT register the user via ACME or prompt the user.
+// You must also pass in the storage wherein the user should be saved.
+// It should be the storage for the CA with which user has an account.
 func (manager *ACMEManager) saveUser(ca string, user *user) error {
 	regBytes, err := json.MarshalIndent(&user, "", "\t")
 	if err != nil {

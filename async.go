@@ -23,10 +23,10 @@ type namedJob struct {
 	job  func() error
 }
 
-// Submit enqueues the given job with the given name. If name is non-empty
-// and a job with the same name is already enqueued or running, this is a
-// no-op. If name is empty, no duplicate prevention will occur. The job
-// manager will then run this job as soon as it is able.
+// Submit enqueues the given job with the given name.
+// If name is non-empty and a job with the same name is already enqueued or running, this is a no-op.
+// If name is empty, no duplicate prevention will occur.
+// The job manager will then run this job as soon as it is able.
 func (jobmanager *jobManager) Submit(name string, job func() error) {
 	jobmanager.mu.Lock()
 	defer jobmanager.mu.Unlock()
@@ -73,8 +73,7 @@ func doWithRetry(ctx context.Context, f func(context.Context) error) error {
 	var attempts int
 	ctx = context.WithValue(ctx, AttemptsCtxKey, &attempts)
 
-	// the initial intervalIndex is -1, signaling
-	// that we should not wait for the first attempt
+	// the initial intervalIndex is -1, signaling that we should not wait for the first attempt
 	start, intervalIndex := time.Now(), -1
 	var err error
 
@@ -114,8 +113,7 @@ func doWithRetry(ctx context.Context, f func(context.Context) error) error {
 	return err
 }
 
-// ErrNoRetry is an error type which signals
-// to stop retries early.
+// ErrNoRetry is an error type which signals to stop retries early.
 type ErrNoRetry struct{ Err error }
 
 // Unwrap makes it so that e wraps e.Err.
@@ -124,24 +122,18 @@ func (e ErrNoRetry) Error() string { return e.Err.Error() }
 
 type retryStateCtxKey struct{}
 
-// AttemptsCtxKey is the context key for the value
-// that holds the attempt counter. The value counts
-// how many times the operation has been attempted.
+// AttemptsCtxKey is the context key for the value that holds the attempt counter.
+// The value counts how many times the operation has been attempted.
 // A value of 0 means first attempt.
 var AttemptsCtxKey retryStateCtxKey
 
-// retryIntervals are based on the idea of exponential
-// backoff, but weighed a little more heavily to the
-// front. We figure that intermittent errors would be
-// resolved after the first retry, but any errors after
-// that would probably require at least a few minutes
-// to clear up: either for DNS to propagate, for the
-// administrator to fix their DNS or network properties,
-// or some other external factor needs to change. We
-// chose intervals that we think will be most useful
-// without introducing unnecessary delay. The last
-// interval in this list will be used until the time
-// of maxRetryDuration has elapsed.
+// retryIntervals are based on the idea of exponential backoff, but weighed a little more heavily to the front.
+// We figure that intermittent errors would be resolved after the first retry,
+// but any errors after that would probably require at least a few minutes to clear up:
+// either for DNS to propagate, for the administrator to fix their DNS or network properties,
+// or some other external factor needs to change.
+// We chose intervals that we think will be most useful without introducing unnecessary delay.
+// The last interval in this list will be used until the time of maxRetryDuration has elapsed.
 var retryIntervals = []time.Duration{
 	1 * time.Minute,
 	2 * time.Minute,
@@ -157,6 +149,5 @@ var retryIntervals = []time.Duration{
 	6 * time.Hour, // for up to maxRetryDuration
 }
 
-// maxRetryDuration is the maximum duration to try
-// doing retries using the above intervals.
+// maxRetryDuration is the maximum duration to try doing retries using the above intervals.
 const maxRetryDuration = 24 * time.Hour * 30

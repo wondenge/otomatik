@@ -9,27 +9,22 @@ import (
 )
 
 // Cache is a structure that stores certificates in memory.
-// A Cache indexes certificates by name for quick access
-// during TLS handshakes, and avoids duplicating certificates
-// in memory. Generally, there should only be one per process.
-// However, that is not a strict requirement; but using more
-// than one is a code smell, and may indicate an
-// over-engineered design.
+// A Cache indexes certificates by name for quick access during TLS handshakes,
+// and avoids duplicating certificates in memory.
+// Generally, there should only be one per process.
+// However, that is not a strict requirement; but using more than one is a code smell,
+// and may indicate an over-engineered design.
 //
-// An empty cache is INVALID and must not be used. Be sure
-// to call NewCache to get a valid value.
+// An empty cache is INVALID and must not be used.
+// Be sure to call NewCache to get a valid value.
 //
-// These should be very long-lived values and must not be
-// copied. Before all references leave scope to be garbage
-// collected, ensure you call Stop() to stop maintenance on
-// the certificates stored in this cache and release locks.
+// These should be very long-lived values and must not be copied.
+// Before all references leave scope to be garbage collected,
+// ensure you call Stop() to stop maintenance on the certificates stored in this cache and release locks.
 //
-// Caches are not usually manipulated directly; create a
-// Config value with a pointer to a Cache, and then use
-// the Config to interact with the cache. Caches are
-// agnostic of any particular storage or ACME config,
-// since each certificate may be managed and stored
-// differently.
+// Caches are not usually manipulated directly;
+// create a Config value with a pointer to a Cache, and then use the Config to interact with the cache.
+// Caches are agnostic of any particular storage or ACME config, since each certificate may be managed and stored differently.
 type Cache struct {
 	// User configuration of the cache
 	options CacheOptions
@@ -50,28 +45,20 @@ type Cache struct {
 	doneChan chan struct{}
 }
 
-// NewCache returns a new, valid Cache for efficiently
-// accessing certificates in memory. It also begins a
-// maintenance goroutine to tend to the certificates
-// in the cache. Call Stop() when you are done with the
-// cache so it can clean up locks and stuff.
+// NewCache returns a new, valid Cache for efficiently accessing certificates in memory.
+// It also begins a maintenance goroutine to tend to the certificates in the cache.
+// Call Stop() when you are done with the cache so it can clean up locks and stuff.
 //
-// Most users of this package will not need to call this
-// because a default certificate cache is created for you.
+// Most users of this package will not need to call this because a default certificate cache is created for you.
 // Only advanced use cases require creating a new cache.
 //
-// This function panics if opts.GetConfigForCert is not
-// set. The reason is that a cache absolutely needs to
-// be able to get a Config with which to manage TLS
-// assets, and it is not safe to assume that the Default
-// config is always the correct one, since you have
-// created the cache yourself.
+// This function panics if opts.GetConfigForCert is not set.
+// The reason is that a cache absolutely needs to be able to get a Config with which to manage TLS assets,
+// and it is not safe to assume that the Default config is always the correct one, since you have created the cache yourself.
 //
-// See the godoc for Cache to use it properly. When
-// no longer needed, caches should be stopped with
-// Stop() to clean up resources even if the process
-// is being terminated, so that it can clean up
-// any locks for other processes to unblock!
+// See the godoc for Cache to use it properly.
+// When no longer needed, caches should be stopped with Stop() to clean up resources even if the process
+// is being terminated, so that it can clean up any locks for other processes to unblock!
 func NewCache(opts CacheOptions) *Cache {
 	// assume default options if necessary
 	if opts.OCSPCheckInterval <= 0 {
@@ -81,9 +68,7 @@ func NewCache(opts CacheOptions) *Cache {
 		opts.RenewCheckInterval = DefaultRenewCheckInterval
 	}
 
-	// this must be set, because we cannot not
-	// safely assume that the Default Config
-	// is always the correct one to use
+	// this must be set, because we cannot not safely assume that the Default Config is always the correct one to use
 	if opts.GetConfigForCert == nil {
 		panic("cache must be initialized with a GetConfigForCert callback")
 	}
@@ -101,39 +86,30 @@ func NewCache(opts CacheOptions) *Cache {
 	return c
 }
 
-// Stop stops the maintenance goroutine for
-// certificates in certCache. It blocks until
-// stopping is complete. Once a cache is
-// stopped, it cannot be reused.
+// Stop stops the maintenance goroutine for certificates in certCache.
+// It blocks until stopping is complete.
+// Once a cache is stopped, it cannot be reused.
 func (certCache *Cache) Stop() {
 	close(certCache.stopChan) // signal to stop
 	<-certCache.doneChan      // wait for stop to complete
 }
 
 // CacheOptions is used to configure certificate caches.
-// Once a cache has been created with certain options,
-// those settings cannot be changed.
+// Once a cache has been created with certain options, those settings cannot be changed.
 type CacheOptions struct {
-	// REQUIRED. A function that returns a configuration
-	// used for managing a certificate, or for accessing
-	// that certificate's asset storage (e.g. for
-	// OCSP staples, etc). The returned Config MUST
-	// be associated with the same Cache as the caller.
+	// REQUIRED. A function that returns a configuration used for managing a certificate,
+	// or for accessing that certificate's asset storage (e.g. for OCSP staples, etc).
+	// The returned Config MUST be associated with the same Cache as the caller.
 	//
-	// The reason this is a callback function, dynamically
-	// returning a Config (instead of attaching a static
-	// pointer to a Config on each certificate) is because
-	// the config for how to manage a domain's certificate
-	// might change from maintenance to maintenance. The
-	// cache is so long-lived, we cannot assume that the
-	// host's situation will always be the same; e.g. the
-	// certificate might switch DNS providers, so the DNS
-	// challenge (if used) would need to be adjusted from
-	// the last time it was run ~8 weeks ago.
+	// The reason this is a callback function, dynamically returning
+	// a Config (instead of attaching a static pointer to a Config on each certificate) is because
+	// the config for how to manage a domain's certificate  might change from maintenance to maintenance.
+	// The cache is so long-lived, we cannot assume that the host's situation will always be the same;
+	// e.g. the certificate might switch DNS providers, so the DNS challenge (if used) would need
+	// to be adjusted from the last time it was run ~8 weeks ago.
 	GetConfigForCert ConfigGetter
 
-	// How often to check certificates for renewal;
-	// if unset, DefaultOCSPCheckInterval will be used.
+	// How often to check certificates for renewal; if unset, DefaultOCSPCheckInterval will be used.
 	OCSPCheckInterval time.Duration
 
 	// How often to check certificates for renewal;
@@ -141,13 +117,11 @@ type CacheOptions struct {
 	RenewCheckInterval time.Duration
 }
 
-// ConfigGetter is a function that returns a prepared,
-// valid config that should be used when managing the
-// given certificate or its assets.
+// ConfigGetter is a function that returns a prepared, valid config that should
+// be used when managing the given certificate or its assets.
 type ConfigGetter func(Certificate) (*Config, error)
 
 // cacheCertificate calls unsyncedCacheCertificate with a write lock.
-//
 // This function is safe for concurrent use.
 func (certCache *Cache) cacheCertificate(cert Certificate) {
 	certCache.mu.Lock()
@@ -155,12 +129,10 @@ func (certCache *Cache) cacheCertificate(cert Certificate) {
 	certCache.mu.Unlock()
 }
 
-// unsyncedCacheCertificate adds cert to the in-memory cache unless
-// it already exists in the cache (according to cert.Hash). It
-// updates the name index.
-//
-// This function is NOT safe for concurrent use. Callers MUST acquire
-// a write lock on certCache.mu first.
+// unsyncedCacheCertificate adds cert to the in-memory cache unless it already exists in the cache (according to cert.Hash).
+// It updates the name index.
+// This function is NOT safe for concurrent use.
+// Callers MUST acquire a write lock on certCache.mu first.
 func (certCache *Cache) unsyncedCacheCertificate(cert Certificate) {
 	// no-op if this certificate already exists in the cache
 	if _, ok := certCache.cache[cert.hash]; ok {
@@ -177,9 +149,7 @@ func (certCache *Cache) unsyncedCacheCertificate(cert Certificate) {
 }
 
 // removeCertificate removes cert from the cache.
-//
-// This function is NOT safe for concurrent use; callers
-// MUST first acquire a write lock on certCache.mu.
+// This function is NOT safe for concurrent use; callers MUST first acquire a write lock on certCache.mu.
 func (certCache *Cache) removeCertificate(cert Certificate) {
 	// delete all mentions of this cert from the name index
 	for _, name := range cert.Names {
@@ -200,9 +170,7 @@ func (certCache *Cache) removeCertificate(cert Certificate) {
 	delete(certCache.cache, cert.hash)
 }
 
-// replaceCertificate atomically replaces oldCert with newCert in
-// the cache.
-//
+// replaceCertificate atomically replaces oldCert with newCert in the cache.
 // This method is safe for concurrent use.
 func (certCache *Cache) replaceCertificate(oldCert, newCert Certificate) {
 	certCache.mu.Lock()
@@ -257,15 +225,13 @@ func (certCache *Cache) getConfig(cert Certificate) (*Config, error) {
 	return cfg, nil
 }
 
-// AllMatchingCertificates returns a list of all certificates that could
-// be used to serve the given SNI name, including exact SAN matches and
-// wildcard matches.
+// AllMatchingCertificates returns a list of all certificates that could be used to serve the given SNI name,
+// including exact SAN matches and wildcard matches.
 func (certCache *Cache) AllMatchingCertificates(name string) []Certificate {
 	// get exact matches first
 	certs := certCache.getAllMatchingCerts(name)
 
-	// then look for wildcard matches by replacing each
-	// label of the domain name with wildcards
+	// then look for wildcard matches by replacing each label of the domain name with wildcards
 	labels := strings.Split(name, ".")
 	for i := range labels {
 		labels[i] = "*"

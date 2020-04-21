@@ -17,34 +17,25 @@ import (
 	"github.com/go-acme/lego/v3/challenge/dns01"
 )
 
-// ACMEManager gets certificates using ACME. It implements the PreChecker,
-// Issuer, and Revoker interfaces.
-//
+// ACMEManager gets certificates using ACME. It implements the PreChecker, Issuer, and Revoker interfaces.
 // It is NOT VALID to use an ACMEManager without calling NewACMEManager().
-// It fills in default values from DefaultACME as well as setting up
-// internal state that is necessary for valid use. Always call
-// NewACMEManager() to get a valid ACMEManager value.
+// It fills in default values from DefaultACME as well as setting up internal state that is necessary for valid use.
+// Always call NewACMEManager() to get a valid ACMEManager value.
 type ACMEManager struct {
-	// The endpoint of the directory for the ACME
-	// CA we are to use
+	// The endpoint of the directory for the ACME CA we are to use
 	CA string
 
-	// TestCA is the endpoint of the directory for
-	// an ACME CA to use to test domain validation,
-	// but any certs obtained from this CA are
-	// discarded
+	// TestCA is the endpoint of the directory for an ACME CA to use to test domain validation,
+	// but any certs obtained from this CA are discarded
 	TestCA string
 
-	// The email address to use when creating or
-	// selecting an existing ACME server account
+	// The email address to use when creating or selecting an existing ACME server account
 	Email string
 
-	// Set to true if agreed to the CA's
-	// subscriber agreement
+	// Set to true if agreed to the CA's subscriber agreement
 	Agreed bool
 
-	// An optional external account to associate
-	// with this ACME account
+	// An optional external account to associate with this ACME account
 	ExternalAccount *ExternalAccountBinding
 
 	// Disable all HTTP challenges
@@ -53,52 +44,37 @@ type ACMEManager struct {
 	// Disable all TLS-ALPN challenges
 	DisableTLSALPNChallenge bool
 
-	// The host (ONLY the host, not port) to listen
-	// on if necessary to start a listener to solve
-	// an ACME challenge
+	// The host (ONLY the host, not port) to listen on if necessary to start a listener to solve an ACME challenge
 	ListenHost string
 
-	// The alternate port to use for the ACME HTTP
-	// challenge; if non-empty, this port will be
-	// used instead of HTTPChallengePort to spin up
-	// a listener for the HTTP challenge
+	// The alternate port to use for the ACME HTTP challenge; if non-empty, this port
+	// will be used instead of HTTPChallengePort to spin up a listener for the HTTP challenge
 	AltHTTPPort int
 
-	// The alternate port to use for the ACME
-	// TLS-ALPN challenge; the system must forward
-	// TLSALPNChallengePort to this port for
-	// challenge to succeed
+	// The alternate port to use for the ACME TLS-ALPN challenge;
+	// the system must forward TLSALPNChallengePort to this port for challenge to succeed
 	AltTLSALPNPort int
 
-	// The DNS provider to use when solving the
-	// ACME DNS challenge
+	// The DNS provider to use when solving the ACME DNS challenge
 	DNSProvider challenge.Provider
 
-	// The ChallengeOption struct to provide
-	// custom precheck or name resolution options
-	// for DNS challenge validation and execution
+	// The ChallengeOption struct to provide custom precheck or name resolution options for DNS challenge validation and execution
 	DNSChallengeOption dns01.ChallengeOption
 
-	// TrustedRoots specifies a pool of root CA
-	// certificates to trust when communicating
-	// over a network to a peer.
+	// TrustedRoots specifies a pool of root CA certificates to trust when communicating over a network to a peer.
 	TrustedRoots *x509.CertPool
 
-	// The maximum amount of time to allow for
-	// obtaining a certificate. If empty, the
-	// default from the underlying lego lib is
-	// used. If set, it must not be too low so
-	// as to cancel orders too early, running
-	// the risk of rate limiting.
+	// The maximum amount of time to allow for obtaining a certificate.
+	// If empty, the default from the underlying lego lib is used.
+	// If set, it must not be too low so as to cancel orders too early, running the risk of rate limiting.
 	CertObtainTimeout time.Duration
 
 	config *Config
 }
 
-// NewACMEManager constructs a valid ACMEManager based on a template
-// configuration; any empty values will be filled in by defaults in
-// DefaultACME. The associated config is also required.
-//
+// NewACMEManager constructs a valid ACMEManager based on a template configuration;
+// any empty values will be filled in by defaults in DefaultACME.
+// The associated config is also required.
 // Typically, you'll create the Config first, then call NewACMEManager(),
 // then assign the return value to the Issuer/Revoker fields of the Config.
 func NewACMEManager(cfg *Config, template ACMEManager) *ACMEManager {
@@ -148,8 +124,7 @@ func NewACMEManager(cfg *Config, template ACMEManager) *ACMEManager {
 	return &template
 }
 
-// IssuerKey returns the unique issuer key for the
-// confgured CA endpoint.
+// IssuerKey returns the unique issuer key for the configured CA endpoint.
 func (manager *ACMEManager) IssuerKey() string {
 	return manager.issuerKey(manager.CA)
 }
@@ -159,9 +134,8 @@ func (manager *ACMEManager) issuerKey(ca string) string {
 	if caURL, err := url.Parse(key); err == nil {
 		key = caURL.Host
 		if caURL.Path != "" {
-			// keep the path, but make sure it's a single
-			// component (i.e. no forward slashes, and for
-			// good measure, no backward slashes either)
+			// keep the path, but make sure it's a single component
+			// (i.e. no forward slashes, and for good measure, no backward slashes either)
 			const hyphen = "-"
 			repl := strings.NewReplacer(
 				"/", hyphen,
@@ -176,9 +150,8 @@ func (manager *ACMEManager) issuerKey(ca string) string {
 	return key
 }
 
-// PreCheck performs a few simple checks before obtaining or
-// renewing a certificate with ACME, and returns whether this
-// batch is eligible for certificates if using Let's Encrypt.
+// PreCheck performs a few simple checks before obtaining or renewing a certificate with ACME,
+// and returns whether this batch is eligible for certificates if using Let's Encrypt.
 // It also ensures that an email address is available.
 func (manager *ACMEManager) PreCheck(names []string, interactive bool) error {
 	letsEncrypt := strings.Contains(manager.CA, "api.letsencrypt.org")
@@ -192,8 +165,7 @@ func (manager *ACMEManager) PreCheck(names []string, interactive bool) error {
 	return manager.getEmail(interactive)
 }
 
-// Issue implements the Issuer interface. It obtains a certificate for the given csr using
-// the ACME configuration am.
+// Issue implements the Issuer interface. It obtains a certificate for the given csr using the ACME configuration am.
 func (manager *ACMEManager) Issue(ctx context.Context, csr *x509.CertificateRequest) (*IssuedCertificate, error) {
 	if manager.config == nil {
 		panic("missing config pointer (must use NewACMEManager)")
@@ -212,34 +184,34 @@ func (manager *ACMEManager) Issue(ctx context.Context, csr *x509.CertificateRequ
 	// important to note that usedTestCA is not necessarily the same as isRetry
 	// (usedTestCA can be true if the main CA and the test CA happen to be the same)
 	if isRetry && usedTestCA && manager.CA != manager.TestCA {
-		// succeeded with testing endpoint, so try again with production endpoint
-		// (only if the production endpoint is different from the testing endpoint)
+		// succeeded with testing endpoint,
+		// so try again with production endpoint (only if the production endpoint is different from the testing endpoint)
 		// TODO: This logic is imperfect and could benefit from some refinement.
-		// The two CA endpoints likely have different states, which could cause one
-		// to succeed and the other to fail, even if it's not a validation error.
+		// The two CA endpoints likely have different states, which could cause one to succeed and the other to fail,
+		// even if it's not a validation error.
+		//
 		// Two common cases would be:
-		// 1) Rate limiter state. This is more likely to cause prod to fail while
-		// staging succeeds, since prod usually has tighter rate limits. Thus, if
-		// initial attempt failed in prod due to rate limit, first retry (on staging)
-		// might succeed, and then trying prod again right way would probably still
-		// fail; normally this would terminate retries but the right thing to do in
-		// this case is to back off and retry again later. We could refine this logic
-		// to stick with the production endpoint on retries unless the error changes.
-		// 2) Cached authorizations state. If a domain validates successfully with
-		// one endpoint, but then the other endpoint is used, it might fail, e.g. if
-		// DNS was just changed or is still propagating. In this case, the second CA
-		// should continue to be retried with backoff, without switching back to the
-		// other endpoint. This is more likely to happen if a user is testing with
-		// the staging CA as the main CA, then changes their configuration once they
-		// think they are ready for the production endpoint.
+		//
+		// 1) Rate limiter state.
+		// This is more likely to cause prod to fail while staging succeeds, since prod usually has tighter rate limits.
+		// Thus, if initial attempt failed in prod due to rate limit, first retry (on staging) might succeed,
+		// and then trying prod again right way would probably still fail; normally this would terminate retries
+		// but the right thing to do in this case is to back off and retry again later.
+		// We could refine this logic to stick with the production endpoint on retries unless the error changes.
+		//
+		// 2) Cached authorizations state.
+		// If a domain validates successfully with one endpoint, but then the other endpoint is used, it might fail,
+		// e.g. if DNS was just changed or is still propagating.
+		// In this case, the second CA should continue to be retried with backoff, without switching back to the other endpoint.
+		// This is more likely to happen if a user is testing with the staging CA as the main CA,
+		// then changes their configuration once they think they are ready for the production endpoint.
 		cert, _, err = manager.doIssue(ctx, csr, false)
 		if err != nil {
 			// succeeded with test CA but failed just now with the production CA;
-			// either we are observing differing internal states of each CA that will
-			// work out with time, or there is a bug/misconfiguration somewhere
-			// externally; it is hard to tell which! one easy cue is whether the
-			// error is specifically a 429 (Too Many Requests); if so, we should
-			// probably keep retrying
+			// either we are observing differing internal states of each CA that will work out with time,
+			// or there is a bug/misconfiguration somewhere externally; it is hard to tell which!
+			// one easy cue is whether the error is specifically a 429 (Too Many Requests);
+			// if so, we should probably keep retrying
 			var acmeErr acme.ProblemDetails
 			if errors.As(err, &acmeErr) {
 				if acmeErr.HTTPStatus == http.StatusTooManyRequests {
@@ -328,15 +300,13 @@ func (manager *ACMEManager) Revoke(ctx context.Context, cert CertificateResource
 	return client.revoke(ctx, cr)
 }
 
-// ExternalAccountBinding contains information for
-// binding an external account to an ACME account.
+// ExternalAccountBinding contains information for binding an external account to an ACME account.
 type ExternalAccountBinding struct {
 	KeyID string
 	HMAC  []byte
 }
 
-// DefaultACME specifies the default settings
-// to use for ACMEManagers.
+// DefaultACME specifies the default settings to use for ACMEManagers.
 var DefaultACME = ACMEManager{
 	CA:     LetsEncryptProductionCA,
 	TestCA: LetsEncryptStagingCA,
