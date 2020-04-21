@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var jm = &jobManager{maxConcurrentJobs: 1000}
+var jobmanager = &jobManager{maxConcurrentJobs: 1000}
 
 type jobManager struct {
 	mu                sync.Mutex
@@ -27,44 +27,44 @@ type namedJob struct {
 // and a job with the same name is already enqueued or running, this is a
 // no-op. If name is empty, no duplicate prevention will occur. The job
 // manager will then run this job as soon as it is able.
-func (jm *jobManager) Submit(name string, job func() error) {
-	jm.mu.Lock()
-	defer jm.mu.Unlock()
-	if jm.names == nil {
-		jm.names = make(map[string]struct{})
+func (jobmanager *jobManager) Submit(name string, job func() error) {
+	jobmanager.mu.Lock()
+	defer jobmanager.mu.Unlock()
+	if jobmanager.names == nil {
+		jobmanager.names = make(map[string]struct{})
 	}
 	if name != "" {
 		// prevent duplicate jobs
-		if _, ok := jm.names[name]; ok {
+		if _, ok := jobmanager.names[name]; ok {
 			return
 		}
-		jm.names[name] = struct{}{}
+		jobmanager.names[name] = struct{}{}
 	}
-	jm.queue = append(jm.queue, namedJob{name, job})
-	if jm.activeWorkers < jm.maxConcurrentJobs {
-		jm.activeWorkers++
-		go jm.worker()
+	jobmanager.queue = append(jobmanager.queue, namedJob{name, job})
+	if jobmanager.activeWorkers < jobmanager.maxConcurrentJobs {
+		jobmanager.activeWorkers++
+		go jobmanager.worker()
 	}
 }
 
-func (jm *jobManager) worker() {
+func (jobmanager *jobManager) worker() {
 	for {
-		jm.mu.Lock()
-		if len(jm.queue) == 0 {
-			jm.activeWorkers--
-			jm.mu.Unlock()
+		jobmanager.mu.Lock()
+		if len(jobmanager.queue) == 0 {
+			jobmanager.activeWorkers--
+			jobmanager.mu.Unlock()
 			return
 		}
-		next := jm.queue[0]
-		jm.queue = jm.queue[1:]
-		jm.mu.Unlock()
+		next := jobmanager.queue[0]
+		jobmanager.queue = jobmanager.queue[1:]
+		jobmanager.mu.Unlock()
 		if err := next.job(); err != nil {
 			log.Printf("[ERROR] %v", err)
 		}
 		if next.name != "" {
-			jm.mu.Lock()
-			delete(jm.names, next.name)
-			jm.mu.Unlock()
+			jobmanager.mu.Lock()
+			delete(jobmanager.names, next.name)
+			jobmanager.mu.Unlock()
 		}
 	}
 }

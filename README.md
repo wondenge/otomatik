@@ -1,6 +1,16 @@
 # Otomatik - Automatic HTTPS using Let's Encrypt
 
-With Otomatik, you can add one line to your Go application to serve securely over TLS, without ever having to touch certificates.
+We use `otomatic` at [Chamaconekt Kenya](https://github.com/chamaconekt) in our `net.listen` golang programs,
+or essentially all of our server applications. This helps us improve and automate network security for all
+of our go programs using the ACME protocol.
+
+This protocol gives us TLS certificates, meaning we are getting security from the transport layer. TLS gives us
+certain guarantees;
+- We want our data to remain private on transit.
+- We also want integrity, a guarantee that our data is not modified on transit, and if someone does, we detect it and reject it.
+- We want authenticity, a promise that we know we are talking to the right machine and not an impersonator.
+
+With Otomatik, we can add one line to our Go applications to serve securely over TLS, without ever having to touch certificates.
 
 Instead of:
 
@@ -9,16 +19,16 @@ Instead of:
 http.ListenAndServe(":80", mux)
 ```
 
-Use Otomatik:
+We use Otomatik:
 
 ```go
 // encrypted HTTPS with HTTP->HTTPS redirects - yay! 🔒😍
 otomatik.HTTPS([]string{"example.com"}, mux)
 ```
 
-That line of code will serve your HTTP router `mux` over HTTPS, complete with HTTP->HTTPS redirects. It obtains and renews the TLS certificates. It staples OCSP responses for greater privacy and security. As long as your domain name points to your server, Otomatik will keep its connections secure.
+This line of code serves our HTTP router `mux` over HTTPS, complete with HTTP->HTTPS redirects.
 
-
+It obtains and renews the TLS certificates. It staples OCSP responses for greater privacy and security. As long as our domain name points to our server, Otomatik will keep its connections secure.
 
 ## Features
 

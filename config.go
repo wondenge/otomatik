@@ -313,7 +313,7 @@ func (cfg *Config) manageOne(ctx context.Context, domainName string, async bool)
 			// either the old one (or sometimes the new one) is about to be
 			// canceled. This seems like reasonable logic for any consumer
 			// of this lib. See https://github.com/caddyserver/caddy/issues/3202
-			jm.Submit("", obtain)
+			jobmanager.Submit("", obtain)
 			return nil
 		}
 		return obtain()
@@ -334,7 +334,7 @@ func (cfg *Config) manageOne(ctx context.Context, domainName string, async bool)
 	}
 	if cert.NeedsRenewal(cfg) {
 		if async {
-			jm.Submit("renew_"+domainName, renew)
+			jobmanager.Submit("renew_"+domainName, renew)
 			return nil
 		}
 		return renew()

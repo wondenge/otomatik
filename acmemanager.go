@@ -150,11 +150,11 @@ func NewACMEManager(cfg *Config, template ACMEManager) *ACMEManager {
 
 // IssuerKey returns the unique issuer key for the
 // confgured CA endpoint.
-func (am *ACMEManager) IssuerKey() string {
-	return am.issuerKey(am.CA)
+func (manager *ACMEManager) IssuerKey() string {
+	return manager.issuerKey(manager.CA)
 }
 
-func (am *ACMEManager) issuerKey(ca string) string {
+func (manager *ACMEManager) issuerKey(ca string) string {
 	key := ca
 	if caURL, err := url.Parse(key); err == nil {
 		key = caURL.Host
@@ -180,8 +180,8 @@ func (am *ACMEManager) issuerKey(ca string) string {
 // renewing a certificate with ACME, and returns whether this
 // batch is eligible for certificates if using Let's Encrypt.
 // It also ensures that an email address is available.
-func (am *ACMEManager) PreCheck(names []string, interactive bool) error {
-	letsEncrypt := strings.Contains(am.CA, "api.letsencrypt.org")
+func (manager *ACMEManager) PreCheck(names []string, interactive bool) error {
+	letsEncrypt := strings.Contains(manager.CA, "api.letsencrypt.org")
 	if letsEncrypt {
 		for _, name := range names {
 			if !SubjectQualifiesForPublicCert(name) {
@@ -189,13 +189,13 @@ func (am *ACMEManager) PreCheck(names []string, interactive bool) error {
 			}
 		}
 	}
-	return am.getEmail(interactive)
+	return manager.getEmail(interactive)
 }
 
 // Issue implements the Issuer interface. It obtains a certificate for the given csr using
 // the ACME configuration am.
-func (am *ACMEManager) Issue(ctx context.Context, csr *x509.CertificateRequest) (*IssuedCertificate, error) {
-	if am.config == nil {
+func (manager *ACMEManager) Issue(ctx context.Context, csr *x509.CertificateRequest) (*IssuedCertificate, error) {
+	if manager.config == nil {
 		panic("missing config pointer (must use NewACMEManager)")
 	}
 
@@ -204,14 +204,14 @@ func (am *ACMEManager) Issue(ctx context.Context, csr *x509.CertificateRequest) 
 		isRetry = *attempts > 0
 	}
 
-	cert, usedTestCA, err := am.doIssue(ctx, csr, isRetry)
+	cert, usedTestCA, err := manager.doIssue(ctx, csr, isRetry)
 	if err != nil {
 		return nil, err
 	}
 
 	// important to note that usedTestCA is not necessarily the same as isRetry
 	// (usedTestCA can be true if the main CA and the test CA happen to be the same)
-	if isRetry && usedTestCA && am.CA != am.TestCA {
+	if isRetry && usedTestCA && manager.CA != manager.TestCA {
 		// succeeded with testing endpoint, so try again with production endpoint
 		// (only if the production endpoint is different from the testing endpoint)
 		// TODO: This logic is imperfect and could benefit from some refinement.
@@ -232,7 +232,7 @@ func (am *ACMEManager) Issue(ctx context.Context, csr *x509.CertificateRequest) 
 		// other endpoint. This is more likely to happen if a user is testing with
 		// the staging CA as the main CA, then changes their configuration once they
 		// think they are ready for the production endpoint.
-		cert, _, err = am.doIssue(ctx, csr, false)
+		cert, _, err = manager.doIssue(ctx, csr, false)
 		if err != nil {
 			// succeeded with test CA but failed just now with the production CA;
 			// either we are observing differing internal states of each CA that will
@@ -260,8 +260,8 @@ func (am *ACMEManager) Issue(ctx context.Context, csr *x509.CertificateRequest) 
 	return cert, err
 }
 
-func (am *ACMEManager) doIssue(ctx context.Context, csr *x509.CertificateRequest, useTestCA bool) (*IssuedCertificate, bool, error) {
-	client, err := am.newACMEClientWithRetry(useTestCA)
+func (manager *ACMEManager) doIssue(ctx context.Context, csr *x509.CertificateRequest, useTestCA bool) (*IssuedCertificate, bool, error) {
+	client, err := manager.newACMEClientWithRetry(useTestCA)
 	if err != nil {
 		return nil, false, err
 	}
@@ -288,9 +288,9 @@ func (am *ACMEManager) doIssue(ctx context.Context, csr *x509.CertificateRequest
 	return ic, usingTestCA, nil
 }
 
-func (c *acmeClient) tryAllEnabledChallenges(ctx context.Context, csr *x509.CertificateRequest) (*certificate.Resource, error) {
+func (client *acmeClient) tryAllEnabledChallenges(ctx context.Context, csr *x509.CertificateRequest) (*certificate.Resource, error) {
 	// start with all enabled challenges
-	challenges := c.initialChallenges()
+	challenges := client.initialChallenges()
 	if len(challenges) == 0 {
 		return nil, fmt.Errorf("no challenge types enabled")
 	}
@@ -300,8 +300,8 @@ func (c *acmeClient) tryAllEnabledChallenges(ctx context.Context, csr *x509.Cert
 	var err error
 	for len(challenges) > 0 {
 		var chosenChallenge challenge.Type
-		chosenChallenge, challenges = c.nextChallenge(challenges)
-		cert, err = c.acmeClient.Certificate.ObtainForCSR(*csr, true)
+		chosenChallenge, challenges = client.nextChallenge(challenges)
+		cert, err = client.acmeClient.Certificate.ObtainForCSR(*csr, true)
 		if err == nil {
 			return cert, nil
 		}
@@ -312,8 +312,8 @@ func (c *acmeClient) tryAllEnabledChallenges(ctx context.Context, csr *x509.Cert
 }
 
 // Revoke implements the Revoker interface. It revokes the given certificate.
-func (am *ACMEManager) Revoke(ctx context.Context, cert CertificateResource) error {
-	client, err := am.newACMEClient(false, false)
+func (manager *ACMEManager) Revoke(ctx context.Context, cert CertificateResource) error {
+	client, err := manager.newACMEClient(false, false)
 	if err != nil {
 		return err
 	}

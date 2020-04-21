@@ -14,9 +14,9 @@ import (
 // the challenge state is stored between initiation and solution.
 //
 // If a request is not an ACME HTTP challenge, h will be invoked.
-func (am *ACMEManager) HTTPChallengeHandler(h http.Handler) http.Handler {
+func (manager *ACMEManager) HTTPChallengeHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if am.HandleHTTPChallenge(w, r) {
+		if manager.HandleHTTPChallenge(w, r) {
 			return
 		}
 		h.ServeHTTP(w, r)
@@ -35,32 +35,32 @@ func (am *ACMEManager) HTTPChallengeHandler(h http.Handler) http.Handler {
 // It returns true if it handled the request; if so, the response has
 // already been written. If false is returned, this call was a no-op and
 // the request has not been handled.
-func (am *ACMEManager) HandleHTTPChallenge(w http.ResponseWriter, r *http.Request) bool {
-	if am == nil {
+func (manager *ACMEManager) HandleHTTPChallenge(w http.ResponseWriter, r *http.Request) bool {
+	if manager == nil {
 		return false
 	}
-	if am.DisableHTTPChallenge {
+	if manager.DisableHTTPChallenge {
 		return false
 	}
 	if !LooksLikeHTTPChallenge(r) {
 		return false
 	}
-	return am.distributedHTTPChallengeSolver(w, r)
+	return manager.distributedHTTPChallengeSolver(w, r)
 }
 
 // distributedHTTPChallengeSolver checks to see if this challenge
 // request was initiated by this or another instance which uses the
 // same storage as am does, and attempts to complete the challenge for
 // it. It returns true if the request was handled; false otherwise.
-func (am *ACMEManager) distributedHTTPChallengeSolver(w http.ResponseWriter, r *http.Request) bool {
-	if am == nil {
+func (manager *ACMEManager) distributedHTTPChallengeSolver(w http.ResponseWriter, r *http.Request) bool {
+	if manager == nil {
 		return false
 	}
 
 	host := hostOnly(r.Host)
 
-	tokenKey := distributedSolver{acmeManager: am, caURL: am.CA}.challengeTokensKey(host)
-	chalInfoBytes, err := am.config.Storage.Load(tokenKey)
+	tokenKey := distributedSolver{acmeManager: manager, caURL: manager.CA}.challengeTokensKey(host)
+	chalInfoBytes, err := manager.config.Storage.Load(tokenKey)
 	if err != nil {
 		if _, ok := err.(ErrNotExist); !ok {
 			log.Printf("[ERROR][%s] Opening distributed HTTP challenge token file: %v", host, err)

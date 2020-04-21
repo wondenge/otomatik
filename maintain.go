@@ -165,7 +165,7 @@ func (certCache *Cache) queueRenewalTask(ctx context.Context, oldCert Certificat
 	renewName := oldCert.Names[0]
 
 	// queue up this renewal job (is a no-op if already active or queued)
-	jm.Submit("renew_"+renewName, func() error {
+	jobmanager.Submit("renew_"+renewName, func() error {
 		timeLeft := oldCert.Leaf.NotAfter.Sub(time.Now().UTC())
 		log.Printf("[INFO] %v Maintenance routine: attempting renewal with %v remaining", oldCert.Names, timeLeft)
 
